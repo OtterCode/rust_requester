@@ -5,13 +5,13 @@ use serde::{Deserialize, Serialize};
 pub struct Label {
     pub id: String,
     pub name: String,
-    pub message_list_visibility: String,
-    pub label_list_visibility: String,
+    pub message_list_visibility: Option<String>,
+    pub label_list_visibility: Option<String>,
     #[serde(rename = "type")]
     pub label_type: String,
-    pub messages_total: isize,
-    pub messages_unread: isize,
-    pub threads_total: isize,
-    pub threads_unread: isize,
-    pub color: String,
+    pub messages_total: Option<isize>,
+    pub messages_unread: Option<isize>,
+    pub threads_total: Option<isize>,
+    pub threads_unread: Option<isize>,
+    pub color: Option<String>,
 }

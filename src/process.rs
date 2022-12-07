@@ -14,7 +14,6 @@ pub fn from_json_str(raw_json: &str, db: &Connection) {
         .for_each(save(db))
 }
 
-
 fn save(db: &Connection) -> impl FnMut(&Value) + '_ {
     |label: &Value| {
         let raw_label: Option<crate::label::Label> = serde_json::from_value(label.clone()).ok();
