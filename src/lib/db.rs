@@ -1,4 +1,4 @@
-use rusqlite::{Connection, params};
+pub use rusqlite::{Connection, params};
 use std::error::Error;
 
 // Initializes sqlite3 database, creates config table if it doesn't exist.
@@ -31,6 +31,11 @@ pub fn init() -> Result<Connection, Box<dyn Error>> {
     )?;
 
     Ok(db)
+}
+
+pub fn reset_config(db: &Connection) -> Result<(), Box<dyn Error>> {
+    db.execute("REPLACE INTO config (id) VALUES (1)", params![])?;
+    Ok(())
 }
 
 pub const SELECT_CONFIG: &str = "SELECT api_id, api_secret, auth_url, token_url FROM config WHERE id = 1";
