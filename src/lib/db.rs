@@ -10,7 +10,8 @@ pub fn init() -> Result<Connection, Box<dyn Error>> {
             api_id          TEXT,
             api_secret      TEXT,
             auth_url        TEXT,
-            token_url       TEXT
+            token_url       TEXT,
+            local_port      INTEGER
         );",
         params![],
     )?;
@@ -38,7 +39,7 @@ pub fn reset_config(db: &Connection) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-pub const SELECT_CONFIG: &str = "SELECT api_id, api_secret, auth_url, token_url FROM config WHERE id = 1";
+pub const SELECT_CONFIG: &str = "SELECT api_id, api_secret, auth_url, token_url, local_port FROM config WHERE id = 1";
 
 fn open() -> Result<Connection, Box<dyn Error>> {
     let db = Connection::open("rust_requester.db")?;

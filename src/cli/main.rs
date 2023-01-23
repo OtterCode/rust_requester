@@ -1,11 +1,13 @@
-use rust_requester::request;
-use rust_requester::process;
 use clap::Parser;
 
+use rust_requester::request;
+use rust_requester::process;
+
 use rust_requester::db;
-use rust_requester::configuration::Configuration;
+use rust_requester::configuration::{ Configuration, port::Port };
 
 #[derive(Parser, Debug)]
+#[command(about = include_str!("./README.md"), long_about = None)]
 struct Args {
     /// Reset the API configuration to blank.
     #[arg(short, long)]
@@ -25,10 +27,15 @@ fn main() {
     };
 
     if !config.is_complete() { 
-        config = fill(config, &db).expect("Could not save new configuration.");
+        config = fill_config(config, &db).expect("Could not save new configuration.");
     }
 
-    let raw_result = request::gmail_label_request(config).unwrap();
+    let url_callback = |url: &str| {
+        println!("Please visit the following URL and follow the instructions to authorize this application:");
+        println!("{}", url);
+    };
+
+    let raw_result = request::gmail_label_request(config, &url_callback).unwrap();
 
     process::from_json_str(&raw_result, &db);
 
@@ -49,7 +56,7 @@ fn has_length(s: &String) -> bool {
     s.len() > 0
 }
 
-fn fill(mut configuration: Configuration, db: &db::Connection) -> Result<Configuration, Box<dyn std::error::Error>> {
+fn fill_config(mut configuration: Configuration, db: &db::Connection) -> Result<Configuration, Box<dyn std::error::Error>> {
     println!("Please enter missing API credentials");
     let mut rl = rustyline::Editor::<()>::new().unwrap();
 
@@ -77,7 +84,14 @@ fn fill(mut configuration: Configuration, db: &db::Connection) -> Result<Configu
         rl.readline("Token URL: ").ok()
     }.filter(has_length);
 
+    let local_port = if configuration.local_port.is_some() {
+        configuration.local_port
+    } else {
+        rl.readline("Local Port: ").ok()
+            .and_then(|s| s.parse::<u16>().map(Port::from).ok())
+    };
 
-    configuration.update_api(api_id, api_secret, auth_url, token_url, &db)
+
+    configuration.update_config(api_id, api_secret, auth_url, token_url, local_port, &db)
 
 }
