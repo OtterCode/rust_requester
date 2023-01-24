@@ -50,6 +50,33 @@ impl Configuration {
         Ok(config)
     }
 
+    pub fn selective_immutable_update(
+        self, 
+        id: Option<String>, 
+        secret: Option<String>, 
+        auth_url: Option<String>, 
+        token_url: Option<String>, 
+        local_port: Option<Port>, 
+        db: &Connection
+    ) -> Result<Configuration, Box<dyn std::error::Error>> {
+        let new_config = Self {
+            api: ApiConfiguration {
+                id: id.or(self.api.id),
+                secret: secret.or(self.api.secret),
+                auth_url: auth_url.or(self.api.auth_url),
+                token_url: token_url.or(self.api.token_url),
+            },
+            local_port: local_port.or(self.local_port),
+        };
+
+        db.execute(
+            "UPDATE config SET api_id = ?, api_secret = ?, auth_url = ?, token_url = ?, local_port = ? WHERE id = 1",
+            params![new_config.api.id, new_config.api.secret, new_config.api.auth_url, new_config.api.token_url.clone(), new_config.local_port.map(|p| p.as_u16())]
+        )?;
+
+        Ok(new_config)
+    }
+
     pub fn update_config(
         &mut self,
         id: Option<String>,
@@ -60,7 +87,6 @@ impl Configuration {
         db: &Connection
     ) -> Result<Self, Box<dyn std::error::Error>> {
 
-        //Save back to DB
         db.execute(
             "UPDATE config SET api_id = ?, api_secret = ?, auth_url = ?, token_url = ?, local_port = ? WHERE id = 1",
             params![id, secret, auth_url, token_url, local_port.map(|p| p.as_u16())]
