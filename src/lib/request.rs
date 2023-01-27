@@ -14,6 +14,15 @@ use crate::{
     localhost_oauth_server::{self},
 };
 
+/// The requirements of Iced mean that there are a lot of very specific and
+/// sometimes unpalatable decisions I had to make while designing this lib.
+/// I'm quite pleased that I was able to successfully play hot potato with the
+/// terribly finicky PkceCodeVerifier and the kill signal for the TCPListener
+/// in localhost_oauth_server.
+/// 
+/// The interface for GmailLabelRequest is less clean than I'd like, but I have
+/// to put this project down at some point, it is only a portfolio piece after
+/// all.
 #[derive(Debug, Clone)]
 pub struct GmailLabelRequest {
     oauth_client: oauth2::basic::BasicClient,
@@ -156,12 +165,3 @@ impl GmailLabelRequest {
         Ok((res, self))
     }
 }
-
-// let token = oauth2_token_receiver(config, client)?;
-
-// let client = reqwest::blocking::Client::new();
-
-// let res = client.get("https://www.googleapis.com/gmail/v1/users/me/labels")
-//     .bearer_auth(token.secret())
-//     .send()?
-//     .text()?;

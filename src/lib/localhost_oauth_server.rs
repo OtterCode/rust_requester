@@ -7,23 +7,26 @@ use tokio::time::{sleep, Duration};
 
 const POLL_DELAY_NS: u32 = 50_000u32;
 
-// Create the raw tcp listener. This was originally a very clever little thing
-// that simply ran a filter_map on all streams and called .next once.
-// Unfortunately, there was no reasonable way to stop the stream midway through
-// in case of a cancel, which is called for in the GUI version. Tokio was
-// panicking and throwing a fit when the listeners weren't closed properly
-// before starting another.
-//
-// I also could have used a oneshot, or a warp server with graceful shutdown,
-// or any number of other async solutions but that's not really the goal of
-// this app. If I wanted to do things as quickly as possible, 99% of this app
-// wouldn't exist, and it would just ingest a set of JSON credentials. So,
-// here also I went with a slightly less pragmatic, lower level, method. This
-// is a showpiece after all.
-//
-// My one concession is using tokio to run the sleep. No sense in getting
-// sloppy with resources just because we're indulging in primitive code.
-pub async fn raw_tcp_listener(port: Port, mut signal: Receiver<()>) -> Result<String, Error> {
+/// Create the raw tcp listener. This was originally a very clever little thing
+/// that simply ran a filter_map on all streams and called .next once.
+/// Unfortunately, there was no reasonable way to stop the stream midway 
+/// through in case of a cancel, which is called for in the GUI version. Tokio
+/// was panicking and throwing a fit when the listeners weren't closed properly
+/// before starting another.
+///
+/// I also could have used a oneshot, or a warp server with graceful shutdown,
+/// or any number of other async solutions but that's not really the goal of
+/// this app. If I wanted to do things as quickly as possible, 99% of this app
+/// wouldn't exist, and it would just ingest a set of JSON credentials. So,
+/// here also I went with a slightly less pragmatic, lower level, method. This
+/// is a showpiece after all.
+///
+/// My one concession is using tokio to run the sleep and mpsc. No sense in 
+/// getting sloppy with resources just because we're indulging in primitive 
+/// code.
+pub async fn raw_tcp_listener(
+    port: Port, mut signal: Receiver<()>
+) -> Result<String, Error> {
     let address = SocketAddr::from(([127, 0, 0, 1], port.as_u16()));
     let listener: TcpListener = TcpListener::bind(address)?;
     listener.set_nonblocking(true)?;
@@ -67,12 +70,15 @@ fn collect_stream(mut stream: TcpStream) -> Result<String, Error> {
     let code = extract_code(raw_request.to_string());
 
     if code.is_some() {
+        let ok = "HTTP/1.1 200 OK\r\n\r\n200 OK".as_bytes();
         stream
-            .write("HTTP/1.1 200 OK\r\n\r\n200 OK".as_bytes())
+            .write(ok)
             .unwrap();
     } else {
+        let unauthorized = "HTTP/1.1 401 Unauthorized\r\n\r\n401 Unauthorized"
+            .as_bytes();
         stream
-            .write("HTTP/1.1 401 Unauthorized\r\n\r\n401 Unauthorized".as_bytes())
+            .write(unauthorized)
             .unwrap();
     }
 

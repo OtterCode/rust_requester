@@ -11,6 +11,15 @@ use iced::executor;
 use iced::widget::{Column, Text};
 use iced::{Application, Command, Element, Settings, Subscription, Theme};
 
+// Iced was chosen here instead of other options because it espouses the
+// inimitable Elm Architecture. I'm still sad about how the architect of
+// Elm killed his own project. It's a glimpse into what React could have
+// been, if only a little more pragmatism had been allowed, and the
+// native interfaces hadn't been deprecated. I'm a strong believer in
+// functional principles, but I'm not as committed to immutability at all
+// costs. This project straddles the line, relying on internal mutation
+// that the caller doesn't have need to access whereever possible. 
+
 #[derive(Debug, Clone)]
 enum Message {
     ConfigMessage(config_inputs::Message),

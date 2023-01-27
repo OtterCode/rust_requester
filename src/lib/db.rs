@@ -24,7 +24,7 @@ impl Display for EditableConfigFields {
     }
 }
 
-// Initializes sqlite3 database, creates config table if it doesn't exist.
+/// Initializes sqlite3 database, creates config table if it doesn't exist.
 pub fn init() -> Result<Connection, Error> {
     let db = open()?;
     db.execute(

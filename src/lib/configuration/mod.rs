@@ -6,6 +6,9 @@ use crate::configuration::port::Port;
 use crate::db;
 use crate::error::Error;
 
+/// We're using a macro here, and generics in the db, mostly as proof of 
+/// knowledge, if you will. Neither is strictly necessary for the field
+/// updates.
 macro_rules! field_updater {
     ($field:ident, $enum:ident, $type:ty) => {
         pub fn $field(&mut self, db: &rusqlite::Connection, value: $type) -> Result<(), Error> {
@@ -16,6 +19,8 @@ macro_rules! field_updater {
     };
 }
 
+/// This gets thrown all over the place in the GUI version, and gets cloned
+/// more than I'm happy with. 
 #[derive(Debug, Clone)]
 pub struct Configuration {
     pub api: ApiConfiguration,

@@ -31,7 +31,7 @@ fn main() {
 
     // We're pulling the async requester down into a blocking
     // runtime because async isn't actually helpful for a linear
-    // CLI request like this.
+    // CLI request like this. It's essential in the GUI version.
     let rt = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()

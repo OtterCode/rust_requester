@@ -2,6 +2,8 @@ use postcard::to_stdvec;
 use rusqlite::{params, Connection};
 use serde_json::Value;
 
+/// This is honestly just silly. The whole reason I'm doing this is 
+/// to artificially include serde and database functionality.
 pub fn from_json_str(raw_json: &str, db: &Connection) {
     let values: Value = serde_json::from_str(raw_json).unwrap();
 
