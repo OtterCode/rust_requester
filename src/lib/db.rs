@@ -67,6 +67,22 @@ pub fn update_config<T: rusqlite::ToSql>(field: EditableConfigFields, value: T, 
     Ok(())
 }
 
+pub fn update_full_config(
+    id: Option<String>,
+    secret: Option<String>,
+    auth_url: Option<String>,
+    token_url: Option<String>,
+    local_port: Option<u16>,
+    db: &Connection,
+) -> Result<(), Error> {
+    db.execute(
+        "UPDATE config SET api_id = ?, api_secret = ?, auth_url = ?, token_url = ?, local_port = ? WHERE id = 1",
+        params![id, secret, auth_url, token_url, local_port]
+    ).map_err(Box::from)?;
+
+    Ok(())
+}
+
 pub const SELECT_CONFIG: &str =
     "SELECT api_id, api_secret, auth_url, token_url, local_port FROM config WHERE id = 1";
 

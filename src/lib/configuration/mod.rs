@@ -77,9 +77,14 @@ impl Configuration {
         local_port: Option<Port>,
         db: &Connection,
     ) -> Result<Self, Box<dyn std::error::Error>> {
-        db.execute(
-            "UPDATE config SET api_id = ?, api_secret = ?, auth_url = ?, token_url = ?, local_port = ? WHERE id = 1",
-            params![id, secret, auth_url, token_url, local_port.map(|p| p.as_u16())]
+
+        db::update_full_config(
+            id.clone(),
+            secret.clone(),
+            auth_url.clone(),
+            token_url.clone(),
+            local_port.map(|p| p.as_u16()),
+            db,
         )?;
 
         Ok(Self {
