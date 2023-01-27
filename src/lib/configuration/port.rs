@@ -11,9 +11,9 @@ impl Default for Port {
 }
 
 impl Port {
-    pub fn as_u16 (&self) -> u16 {
+    pub fn as_u16(self) -> u16 {
         self.0
-    }    
+    }
 }
 
 impl Display for Port {

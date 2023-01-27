@@ -1,48 +1,52 @@
-mod message;
-mod config_input;
+mod config_inputs;
+mod label_request_panel;
+mod resources;
 
-use rust_requester::configuration::Configuration;
+use config_inputs::ConfigInputs;
+use label_request_panel::LabelRequestPanel;
+use rust_requester::configuration::{port::Port, Configuration};
 use rust_requester::db;
 
 use iced::executor;
-// use iced::widget::canvas::{Cache, Cursor, Geometry, LineCap, Path, Stroke};
-// use iced::widget::{canvas, container};
-use iced::widget::{ Column, Container, Row, Text };
-use iced::{
-    Application, Color, Command, Element, Length, Point, Rectangle, Settings,
-    Subscription, Theme, Vector,
-};
+use iced::widget::{Column, Text};
+use iced::{Application, Command, Element, Settings, Subscription, Theme};
 
-use crate::config_input::ConfigInput;
+#[derive(Debug, Clone)]
+enum Message {
+    ConfigMessage(config_inputs::Message),
+    LabelRequestPanelMessage(label_request_panel::Message),
+}
 
 pub fn main() -> iced::Result {
-    RustRequester::run(
-        Settings {
-            antialiasing: true,
-            ..Settings::default()
-        }
-    )
+    RustRequester::run(Settings {
+        antialiasing: true,
+        ..Settings::default()
+    })
 }
 
 struct RustRequester {
     config: Configuration,
+    config_inputs: ConfigInputs,
     db: rusqlite::Connection,
+    label_request_panel: LabelRequestPanel,
 }
 
 impl Application for RustRequester {
     type Executor = executor::Default;
-    type Message = message::Message;
+    type Message = Message;
     type Theme = Theme;
     type Flags = ();
 
     fn new(_flags: ()) -> (RustRequester, Command<Self::Message>) {
         let db = db::init().unwrap();
+        let config = Configuration::init(&db).unwrap();
+        let initial_port = config.local_port.map(Port::as_u16);
         (
             RustRequester {
-                config: Configuration::init(&db).unwrap(),
+                config,
+                config_inputs: ConfigInputs::new(initial_port),
                 db,
-                text: "Hello, world!".to_string(),
-                api_key_input: ConfigInput::new("api_key", "API Key:".to_owned(), "_blank_".to_owned())
+                label_request_panel: LabelRequestPanel::new(),
             },
             Command::none(),
         )
@@ -54,11 +58,18 @@ impl Application for RustRequester {
 
     fn update(&mut self, incoming_message: Self::Message) -> Command<Self::Message> {
         match incoming_message {
-            message::Message::ConfigInputChanged(value) => {
-                self.text = format!("New Value: {}", value);
+            Message::ConfigMessage(msg) => {
+                self.config = self
+                    .config_inputs
+                    .update(msg, &self.config, &self.db)
+                    .unwrap();
+                Command::none()
             }
+            Message::LabelRequestPanelMessage(msg) => self
+                .label_request_panel
+                .update(&self.config, &self.db, msg)
+                .map(Message::LabelRequestPanelMessage),
         }
-        Command::none()
     }
 
     fn subscription(&self) -> Subscription<Self::Message> {
@@ -67,30 +78,19 @@ impl Application for RustRequester {
 
     fn view(&self) -> Element<Self::Message> {
         Column::new()
-            .push(Text::new(&self.text))
-            .push(self.api_key_input.render(&self.config))
+            .padding(20)
+            .spacing(20)
+            .push(Text::new("Rust Requester Configuration"))
+            .push(
+                self.config_inputs
+                    .view(&self.config)
+                    .map(Message::ConfigMessage),
+            )
+            .push(
+                self.label_request_panel
+                    .view()
+                    .map(Message::LabelRequestPanelMessage),
+            )
             .into()
     }
 }
-
-// fn main() {
-
-//     let db = db::init().unwrap();
-//     let config = Configuration::init(&db);
-
-//     let raw_result = request::gmail_label_request(config.unwrap()).unwrap();
-
-//     process::from_json_str(&raw_result, &db);
-
-//     let names: Vec<Result<String, rusqlite::Error>> = db.prepare("SELECT name FROM labels")
-//         .expect("Failed to prepare query")
-//         .query_map([], |row| {
-//             let name: String = row.get(0).unwrap_or("UNNAMED".to_owned());
-//             Ok(name)
-//         }).expect("Failed to query labels")
-//         .collect();
-
-//     for name in names {
-//         println!("{}", name.unwrap());
-//     }
-// }

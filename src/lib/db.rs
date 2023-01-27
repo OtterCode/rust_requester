@@ -1,4 +1,4 @@
-pub use rusqlite::{Connection, params};
+pub use rusqlite::{params, Connection};
 use std::error::Error;
 
 // Initializes sqlite3 database, creates config table if it doesn't exist.
@@ -23,13 +23,11 @@ pub fn init() -> Result<Connection, Box<dyn Error>> {
             id              INTEGER PRIMARY KEY,
             name            TEXT,
             postcard        BLOB
-        );", params![]
-    )?;
-
-    db.execute(
-        "INSERT OR IGNORE INTO config (id) VALUES (1)",
+        );",
         params![],
     )?;
+
+    db.execute("INSERT OR IGNORE INTO config (id) VALUES (1)", params![])?;
 
     Ok(db)
 }
@@ -39,9 +37,21 @@ pub fn reset_config(db: &Connection) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-pub const SELECT_CONFIG: &str = "SELECT api_id, api_secret, auth_url, token_url, local_port FROM config WHERE id = 1";
+pub const SELECT_CONFIG: &str =
+    "SELECT api_id, api_secret, auth_url, token_url, local_port FROM config WHERE id = 1";
 
 fn open() -> Result<Connection, Box<dyn Error>> {
     let db = Connection::open("rust_requester.db")?;
     Ok(db)
+}
+
+pub fn get_labels(db: &Connection) -> Vec<Result<String, rusqlite::Error>> {
+    db.prepare("SELECT name FROM labels")
+        .expect("Failed to prepare query.")
+        .query_map([], |row| {
+            let name: String = row.get(0).unwrap_or("UNNAMED".to_owned());
+            Ok(name)
+        })
+        .expect("Failed to query labels.")
+        .collect()
 }
