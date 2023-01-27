@@ -61,7 +61,7 @@ impl Application for RustRequester {
             Message::ConfigMessage(msg) => {
                 self.config = self
                     .config_inputs
-                    .update(msg, &self.config, &self.db)
+                    .update(msg, &mut self.config, &self.db)
                     .unwrap();
                 Command::none()
             }

@@ -72,21 +72,29 @@ impl ConfigInputs {
     pub fn update(
         &mut self,
         incoming_message: Message,
-        config: &Configuration,
+        config: &mut Configuration,
         db: &rusqlite::Connection,
     ) -> Result<Configuration, Error> {
         match incoming_message {
             Message::ClientIDChanged(value) => {
-                config.selective_immutable_update(Some(value), None, None, None, None, &db)
+                config.update_id(db, value.clone())?;
+                config.api.id = Some(value);
+                Ok(config.clone())
             }
             Message::ClientSecretChanged(value) => {
-                config.selective_immutable_update(None, Some(value), None, None, None, &db)
+                config.update_secret(db, value.clone())?;
+                config.api.secret = Some(value);
+                Ok(config.clone())
             }
             Message::AuthURLChanged(value) => {
-                config.selective_immutable_update(None, None, Some(value), None, None, &db)
+                config.update_auth_url(db, value.clone())?;
+                config.api.auth_url = Some(value);
+                Ok(config.clone())
             }
             Message::TokenURLChanged(value) => {
-                config.selective_immutable_update(None, None, None, Some(value), None, &db)
+                config.update_token_url(db, value.clone())?;
+                config.api.token_url = Some(value);
+                Ok(config.clone())
             }
             Message::LocalPortChanged(value) => {
                 let port = value.parse::<u16>();
@@ -98,14 +106,9 @@ impl ConfigInputs {
                             self.port_error_style = ErrorStyle::Warning;
                             self.port_error_text = Some(err_text);
                         }
-                        config.selective_immutable_update(
-                            None,
-                            None,
-                            None,
-                            None,
-                            Some(port.into()),
-                            &db,
-                        )
+                        config.update_local_port(db, port)?;
+                        config.local_port = Some(port.into());
+                        Ok(config.clone())
                     }
                     Err(err) => {
                         eprintln!("Invalid port number: {}", err);

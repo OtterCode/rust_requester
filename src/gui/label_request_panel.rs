@@ -173,6 +173,12 @@ impl LabelRequestPanel {
 
         let column = column.push(request_button);
 
+        let column = if let Some(err) = self.display_errors.clone() {
+            column.push(Text::new(err))
+        } else {
+            column
+        };
+
         let column = if let Some(labels) = &self.labels {
             labels
                 .iter()

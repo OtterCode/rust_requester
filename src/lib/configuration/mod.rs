@@ -6,6 +6,16 @@ use crate::configuration::port::Port;
 use crate::db;
 use crate::error::Error;
 
+macro_rules! field_updater {
+    ($field:ident, $enum:ident, $type:ty) => {
+        pub fn $field(&mut self, db: &rusqlite::Connection, value: $type) -> Result<(), Error> {
+            db::update_config::<$type>(db::EditableConfigFields::$enum, value, &db)
+                .map_err(Box::from)?;
+            Ok(())
+        }
+    };
+}
+
 #[derive(Debug, Clone)]
 pub struct Configuration {
     pub api: ApiConfiguration,
@@ -52,32 +62,11 @@ impl Configuration {
         Ok(config)
     }
 
-    pub fn selective_immutable_update(
-        &self,
-        id: Option<String>,
-        secret: Option<String>,
-        auth_url: Option<String>,
-        token_url: Option<String>,
-        local_port: Option<Port>,
-        db: &Connection,
-    ) -> Result<Configuration, Error> {
-        let new_config = Self {
-            api: ApiConfiguration {
-                id: id.or(self.api.id.clone()),
-                secret: secret.or(self.api.secret.clone()),
-                auth_url: auth_url.or(self.api.auth_url.clone()),
-                token_url: token_url.or(self.api.token_url.clone()),
-            },
-            local_port: local_port.or(self.local_port),
-        };
-
-        db.execute(
-            "UPDATE config SET api_id = ?, api_secret = ?, auth_url = ?, token_url = ?, local_port = ? WHERE id = 1",
-            params![new_config.api.id, new_config.api.secret, new_config.api.auth_url, new_config.api.token_url.clone(), new_config.local_port.map(|p| p.as_u16())]
-        ).map_err(Box::from)?;
-
-        Ok(new_config)
-    }
+    field_updater!(update_id, ApiId, String);
+    field_updater!(update_secret, ApiSecret, String);
+    field_updater!(update_auth_url, AuthUrl, String);
+    field_updater!(update_token_url, TokenUrl, String);
+    field_updater!(update_local_port, LocalPort, u16);
 
     pub fn update_config(
         &mut self,

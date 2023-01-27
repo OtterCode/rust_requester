@@ -1,8 +1,31 @@
 pub use rusqlite::{params, Connection};
-use std::error::Error;
+use std::{fmt::Display};
+use crate::error::Error;
+
+/// A sanitized, whitelisted set of fields that we can
+/// plug into queries.
+pub enum EditableConfigFields {
+    ApiId,
+    ApiSecret,
+    AuthUrl,
+    TokenUrl,
+    LocalPort
+}
+
+impl Display for EditableConfigFields {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Self::ApiId => write!(f, "api_id"),
+            Self::ApiSecret => write!(f, "api_secret"),
+            Self::AuthUrl => write!(f, "auth_url"),
+            Self::TokenUrl => write!(f, "token_url"),
+            Self::LocalPort => write!(f, "local_port"),
+        }
+    }
+}
 
 // Initializes sqlite3 database, creates config table if it doesn't exist.
-pub fn init() -> Result<Connection, Box<dyn Error>> {
+pub fn init() -> Result<Connection, Error> {
     let db = open()?;
     db.execute(
         "CREATE TABLE IF NOT EXISTS config (
@@ -14,9 +37,9 @@ pub fn init() -> Result<Connection, Box<dyn Error>> {
             local_port      INTEGER
         );",
         params![],
-    )?;
+    ).map_err(Box::from)?;
 
-    db.execute("DROP TABLE IF EXISTS labels;", params![])?;
+    db.execute("DROP TABLE IF EXISTS labels;", params![]).map_err(Box::from)?;
 
     db.execute(
         "CREATE TABLE IF NOT EXISTS labels (
@@ -25,23 +48,30 @@ pub fn init() -> Result<Connection, Box<dyn Error>> {
             postcard        BLOB
         );",
         params![],
-    )?;
+    ).map_err(Box::from)?;
 
-    db.execute("INSERT OR IGNORE INTO config (id) VALUES (1)", params![])?;
+    db.execute("INSERT OR IGNORE INTO config (id) VALUES (1)", params![]).map_err(Box::from)?;
 
     Ok(db)
 }
 
-pub fn reset_config(db: &Connection) -> Result<(), Box<dyn Error>> {
-    db.execute("REPLACE INTO config (id) VALUES (1)", params![])?;
+pub fn reset_config(db: &Connection) -> Result<(), Error> {
+    db.execute("REPLACE INTO config (id) VALUES (1)", params![]).map_err(Box::from)?;
+    Ok(())
+}
+
+pub fn update_config<T: rusqlite::ToSql>(field: EditableConfigFields, value: T, db: &Connection) -> Result<(), Error> {
+    db.prepare(format!("UPDATE config SET {} = ? WHERE id = 1", field).as_str()).map_err(Box::from)?
+        .execute(params![value]).map_err(Box::from)?;
+
     Ok(())
 }
 
 pub const SELECT_CONFIG: &str =
     "SELECT api_id, api_secret, auth_url, token_url, local_port FROM config WHERE id = 1";
 
-fn open() -> Result<Connection, Box<dyn Error>> {
-    let db = Connection::open("rust_requester.db")?;
+fn open() -> Result<Connection, Error> {
+    let db = Connection::open("rust_requester.db").map_err(Box::from)?;
     Ok(db)
 }
 
